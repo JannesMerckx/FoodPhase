@@ -1,0 +1,164 @@
+%% Backward rays
+
+%Get a ray at the right edge and propagate backwards.
+
+        f = 1;
+        pfinaal=zeros(length(raysvec),2);
+        rfinaal=zeros(length(raysvec),3);
+       for nn=1:length(raysvec)         
+        int = [1,(raysvec(nn,3)-raysvec(nn,1))/raysvec(nn,2)];
+        
+        
+        
+        hold on
+        plot(int(1),int(2),'kx','MarkerSize',8)
+        
+        
+        
+        
+        [~,j] = min( (x(:,1)-int(1)).^2 + (x(:,2)-int(2)).^2  );
+        
+        
+        
+        edges = find(B10(:,j))';
+        
+        for e = edges
+            v1 = int;
+            v2 = x(EL(e(1),1),:);
+            v3 = x(EL(e(1),2),:);
+            s = SA(v1,v2,v3);
+            
+            
+            on_edge = false;
+            if abs(s)<1e-13
+                lambda = (v2-v1)./(v2-v3);
+                if isnan(lambda(1))
+                    lambda = lambda(2);
+                else
+                    lambda = lambda(1);
+                end
+                
+                if 0<= lambda && lambda <= 1
+                    on_edge = true;
+                    break
+                end
+                
+            end
+        end
+        
+        
+        hold on
+        
+        
+        
+        ce = e;
+        cc = find(B21(:,e));
+        
+        
+          p=[-sqrt(eta(cc)^2-pvec(nn,2)^2),-pvec(nn,2)];     
+          r=[-p(2),p(1),-p(2)*int(1)+p(1)*int(2)];
+             
+        while max(abs(int))>0
+            
+            %search edges
+            edges = setdiff(cEL(cc,:),ce);
+            
+            for edge = edges
+                x1 = x(EL(edge,2),:);
+                x2 = x(EL(edge,1),:);
+                t = x2-x1;
+                t = t/norm(t);
+                n = [-t(2),t(1)];
+                le = [n(1),n(2),n*x2'];
+                if abs(r(1)*le(2)-r(2)*le(1))<1e-13
+                    %ray and edge are parrallel
+                    continue
+                end                
+
+                %compute new intersection point parameters
+                %ray in line form
+                %edge in parameter form
+                lambda = r(1:2)*(int-x1)'/(r(1:2)*(x2-x1)');
+                intn = (1-lambda)*x1 + lambda*x2;
+                
+                
+                
+                if (0 <= lambda && lambda <= 1)
+                    %ray hits edge line segment
+                    break
+                end
+                
+                
+            end
+
+            %compute new cell
+            cells = find(B21(:,edge))';
+            ccn = setdiff(cells,cc);
+            
+            
+            %plot([x2(1),x1(1)],[x2(2),x1(2)],'g-','MarkerSize',8);
+            %plot(intn(1),intn(2),'gx','MarkerSize',8);
+            plot([intn(1),int(1)],[intn(2),int(2)],'g-');
+            int = intn;
+            
+            if isempty(ccn)
+                break
+            end
+            
+            
+            %pgon = polyshape(x(DT(ccn,:),1)',x(DT(ccn,:),2)');
+            %plot(pgon);
+                        
+                       
+            pt = (p*t');
+            d = eta(ccn)^2-pt^2;
+            if d>=0
+                pn = pt*t + sign(p*n')*sqrt(eta(ccn)^2-pt^2)*n;
+            else
+                pn = p - 2*(p*n')*n;
+                ccn = cc;
+            end
+            
+            
+            f = f*eta(cc)/eta(ccn)*(pn*n')/(p*n');
+            
+            
+            
+            
+            
+            
+            p = pn;
+            cc = ccn;
+            ce = edge;
+            r = [-p(2),p(1),-p(2)*int(1)+p(1)*int(2)];
+            
+            
+            
+        end
+        
+        f_end = f;
+        f = -f*(p*n')/eta(cc);
+        
+        plot(int(1),int(2),'kx','MarkerSize',8)
+        axis equal
+           t = [0,1];
+           n = [-t(2),t(1)];
+           le = [n(1),n(2),n*x2'];           
+            
+                        
+           pt = (p*t');
+           d = 1-pt^2;
+            if d>=0
+                pn = pt*t + sign(p*n')*sqrt(1-pt^2)*n;
+            else
+                pn = p - 2*(p*n')*n;
+                ccn = cc;
+            end                     
+            
+            p = pn;
+            cc = ccn;
+            ce = edge;
+            r = [-p(2),p(1),-p(2)*int(1)+p(1)*int(2)];
+            pfinaal(nn,:)=p;
+            rfinaal(nn,:)=r;
+       end
